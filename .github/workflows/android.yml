@@ -49,6 +49,9 @@ jobs:
       - name: 给 gradlew 执行权限
         run: chmod +x gradlew
 
+      - name: 下载 Bootstrap 文件
+        run: ./gradlew downloadBootstraps --stacktrace
+
       - name: 编译 Release APK
         run: ./gradlew assembleRelease --stacktrace
 
