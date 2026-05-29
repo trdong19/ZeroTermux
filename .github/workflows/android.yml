@@ -15,6 +15,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86, x86_64]
 
     steps:
       - name: 检出代码
@@ -52,8 +55,8 @@ jobs:
       - name: 下载 Bootstrap 文件
         run: ./gradlew downloadBootstraps --stacktrace
 
-      - name: 编译 Release APK
-        run: ./gradlew assembleRelease --stacktrace
+      - name: 编译 ${{ matrix.abi }} Release APK
+        run: ./gradlew assembleRelease -Pandroid.injected.build.abi=${{ matrix.abi }} --stacktrace
 
       - name: 确定发布名称
         id: set_name
@@ -62,11 +65,9 @@ jobs:
             TAG_NAME=${GITHUB_REF#refs/tags/}
             echo "APP_NAME=$TAG_NAME" >> $GITHUB_ENV
             echo "TAGGED=true" >> $GITHUB_ENV
-            echo "Detected Tag: $TAG_NAME"
           else
             echo "APP_NAME=ZeroTermux-Nightly" >> $GITHUB_ENV
             echo "TAGGED=false" >> $GITHUB_ENV
-            echo "Branch build, using nightly name."
           fi
 
       - name: 重命名 APK 文件
@@ -76,13 +77,12 @@ jobs:
             filename=$(basename "$file")
             new_filename="${filename/termux-app/${{ env.APP_NAME }}}"
             mv "$file" "$dir/$new_filename"
-            echo "已重命名: $filename -> $new_filename"
           done
 
-      - name: 上传 APK 为 Artifact
+      - name: 上传 ${{ matrix.abi }} APK 为 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ZeroTermux-APKs
+          name: ZeroTermux-${{ matrix.abi }}
           path: app/build/outputs/apk/**/*.apk
           retention-days: 30
 
