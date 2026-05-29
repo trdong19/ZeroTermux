@@ -117,7 +117,7 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                        boolean ok = helper.powerOffScreen(targetIp);
                        if (!ok) {
                            UUtils.runOnUIThread(() -> Toast.makeText(context,
-                                   "关闭屏幕失败（需要远程设备 Android 12+）", Toast.LENGTH_LONG).show());
+                                   "关闭屏幕失败", Toast.LENGTH_LONG).show());
                        }
                    }).start();
                }

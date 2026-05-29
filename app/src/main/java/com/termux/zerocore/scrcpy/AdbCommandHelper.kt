@@ -23,18 +23,28 @@ class AdbCommandHelper(private val context: Context) {
     }
 
     /**
-     * 关闭远程设备屏幕（不锁屏，仅关闭显示背光）。
-     * 使用 cmd display power-off 0（Android 12+），
-     * 远程设备屏幕变黑但画面仍可被截取镜像，控制端正常操作。
-     * @return 是否成功
+     * 关闭远程设备屏幕（不锁屏）。
+     * 方案1: cmd display power-off 0 (Android 15+)
+     * 方案2: 亮度降为0 + 关闭自动亮度 (Android 6+)
      */
     fun powerOffScreen(ip: String): Boolean {
-        val result = executeCommand(ip, "cmd display power-off 0")
-        if (result.isSuccess) {
+        // 方案1: cmd display power-off (Android 15+)
+        val r1 = executeCommand(ip, "cmd display power-off 0")
+        if (r1.isSuccess && !r1.output.contains("Unknown command")) {
             Log.i(TAG, "Screen off via cmd display power-off 0")
             return true
         }
-        Log.w(TAG, "cmd display power-off failed: ${result.output}")
+        Log.i(TAG, "cmd display power-off not available, trying brightness fallback")
+
+        // 方案2: 亮度降为0（不锁屏，屏幕变暗近似关闭）
+        executeCommand(ip, "settings put system screen_brightness_mode 0")
+        val r2 = executeCommand(ip, "settings put system screen_brightness 0")
+        if (r2.isSuccess) {
+            Log.i(TAG, "Screen dimmed via brightness=0")
+            return true
+        }
+
+        Log.w(TAG, "All screen off methods failed")
         return false
     }
 
@@ -42,13 +52,18 @@ class AdbCommandHelper(private val context: Context) {
      * 打开远程设备屏幕。
      */
     fun powerOnScreen(ip: String): Boolean {
-        val result = executeCommand(ip, "cmd display power-on 0")
-        if (result.isSuccess) {
+        // 方案1: cmd display power-on (Android 15+)
+        val r1 = executeCommand(ip, "cmd display power-on 0")
+        if (r1.isSuccess && !r1.output.contains("Unknown command")) {
             Log.i(TAG, "Screen on via cmd display power-on 0")
             return true
         }
-        Log.w(TAG, "cmd display power-on failed: ${result.output}")
-        return false
+
+        // 方案2: 恢复亮度
+        executeCommand(ip, "settings put system screen_brightness 255")
+        executeCommand(ip, "settings put system screen_brightness_mode 1")
+        Log.i(TAG, "Screen restored via brightness")
+        return true
     }
 
     /**
@@ -66,16 +81,13 @@ class AdbCommandHelper(private val context: Context) {
             adb.connect()
 
             val stream = adb.open("shell:")
-            // 等待 shell 提示符
             readUntilPrompt(stream)
-            // 发送命令
             stream.write("$command\n")
-            // 读取命令输出
             val output = readUntilPrompt(stream)
 
-            // 判断命令是否成功：检查输出中是否包含错误关键字
-            val hasError = output.contains("Error") || output.contains("error") ||
-                    output.contains("not found") || output.contains("Unknown command")
+            val hasError = output.contains("Unknown command") ||
+                    output.contains("Error:") ||
+                    output.contains("Permission denied")
 
             return CommandResult(!hasError, output)
         } catch (e: IOException) {
