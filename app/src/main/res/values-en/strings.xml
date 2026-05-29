@@ -891,6 +891,8 @@ Reset successfully</string>
     <string name="back_button">v</string>
     <string name="switch0">No Control  (check this if remote device control is not required)</string>
     <string name="switch1">Nav Bar  (check this if remote device does not have on-screen nav bar)</string>
+    <string name="switch_screen_off">Turn screen off after start</string>
+    <string name="switch_power_off_close">Turn screen off on close</string>
     <string name="press_again">Press again to exit</string>
     <string name="label_server_title">label server(BATE)</string>
     <string name="ip_connect">0.0.0.0</string>

@@ -864,6 +864,8 @@
     <string name="back_button">v</string>
     <string name="switch0">无控制（如果不需要远程设备控制，请选中此项）</string>
     <string name="switch1">导航栏（如果远程设备没有屏幕导航栏，请选中此项）</string>
+    <string name="switch_screen_off">启动后关闭远程屏幕</string>
+    <string name="switch_power_off_close">断开时关闭远程屏幕</string>
     <string name="label_server_title">远程连接(BATE)</string>
     <string name="ip_connect">0.0.0.0</string>
     <string name="remote_connection">ADB远程连接</string>

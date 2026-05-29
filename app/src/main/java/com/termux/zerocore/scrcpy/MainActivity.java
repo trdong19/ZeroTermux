@@ -73,6 +73,9 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
     private static float remote_device_height;
     private LinearLayout linearLayout;
     private static boolean no_control = false;
+    private static boolean turnScreenOff = false;
+    private static boolean powerOffOnClose = false;
+    private AdbCommandHelper adbCommandHelper;
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -104,6 +107,20 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
                remote_device_height = rem_res[1];
                remote_device_width = rem_res[0];
                first_time = false;
+               if (turnScreenOff) {
+                   if (adbCommandHelper == null) {
+                       adbCommandHelper = new AdbCommandHelper(context);
+                   }
+                   final String targetIp = serverAdr;
+                   final AdbCommandHelper helper = adbCommandHelper;
+                   new Thread(() -> {
+                       boolean ok = helper.powerOffScreen(targetIp);
+                       if (!ok) {
+                           UUtils.runOnUIThread(() -> Toast.makeText(context,
+                                   "关闭屏幕失败（需要远程设备 Android 12+）", Toast.LENGTH_LONG).show());
+                       }
+                   }).start();
+               }
                }
             } else {
                 scrcpy.setParms(surface, screenWidth, screenHeight);
@@ -204,20 +221,32 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         final EditText editTextServerHost = findViewById(R.id.editText_server_host);
         final Switch aSwitch0 = findViewById(R.id.switch0);
         final Switch aSwitch1 = findViewById(R.id.switch1);
+        final Switch switchScreenOff = findViewById(R.id.switch_screen_off);
+        final Switch switchPowerOffClose = findViewById(R.id.switch_power_off_close);
+        final View layoutScreenOff = findViewById(R.id.layout_screen_off);
+        final View layoutPowerOffClose = findViewById(R.id.layout_power_off_close);
         editTextServerHost.setText(context.getSharedPreferences(PREFERENCE_KEY, 0).getString("Server Address", ""));
         aSwitch0.setChecked(context.getSharedPreferences(PREFERENCE_KEY, 0).getBoolean("No Control", false));
         aSwitch1.setChecked(context.getSharedPreferences(PREFERENCE_KEY, 0).getBoolean("Nav Switch", false));
+        switchScreenOff.setChecked(context.getSharedPreferences(PREFERENCE_KEY, 0).getBoolean("Screen Off", false));
+        switchPowerOffClose.setChecked(context.getSharedPreferences(PREFERENCE_KEY, 0).getBoolean("Power Off On Close", false));
         setSpinner(R.array.options_resolution_keys, R.id.spinner_video_resolution, PREFERENCE_SPINNER_RESOLUTION);
         setSpinner(R.array.options_bitrate_keys, R.id.spinner_video_bitrate, PREFERENCE_SPINNER_BITRATE);
         if(aSwitch0.isChecked()){
             aSwitch1.setVisibility(View.GONE);
+            layoutScreenOff.setVisibility(View.GONE);
+            layoutPowerOffClose.setVisibility(View.GONE);
         }
 
         aSwitch0.setOnClickListener(v -> {
             if(aSwitch0.isChecked()){
                 aSwitch1.setVisibility(View.GONE);
+                layoutScreenOff.setVisibility(View.GONE);
+                layoutPowerOffClose.setVisibility(View.GONE);
             }else{
                 aSwitch1.setVisibility(View.VISIBLE);
+                layoutScreenOff.setVisibility(View.VISIBLE);
+                layoutPowerOffClose.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -307,8 +336,14 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
         no_control = a_Switch0.isChecked();
         final Switch a_Switch1 = findViewById(R.id.switch1);
         nav = a_Switch1.isChecked();
+        final Switch switchScreenOff = findViewById(R.id.switch_screen_off);
+        turnScreenOff = switchScreenOff.isChecked();
+        final Switch switchPowerOffClose = findViewById(R.id.switch_power_off_close);
+        powerOffOnClose = switchPowerOffClose.isChecked();
         context.getSharedPreferences(PREFERENCE_KEY, 0).edit().putBoolean("No Control", no_control).apply();
         context.getSharedPreferences(PREFERENCE_KEY, 0).edit().putBoolean("Nav Switch", nav).apply();
+        context.getSharedPreferences(PREFERENCE_KEY, 0).edit().putBoolean("Screen Off", turnScreenOff).apply();
+        context.getSharedPreferences(PREFERENCE_KEY, 0).edit().putBoolean("Power Off On Close", powerOffOnClose).apply();
 
         final String[] videoResolutions = getResources().getStringArray(R.array.options_resolution_values)[videoResolutionSpinner.getSelectedItemPosition()].split(",");
             screenHeight = Integer.parseInt(videoResolutions[0]);
@@ -460,6 +495,15 @@ public class MainActivity extends Activity implements Scrcpy.ServiceCallbacks, S
             long now = SystemClock.uptimeMillis();
             if (now < timestamp + 1000) {
                 timestamp = 0;
+                if (powerOffOnClose && serverAdr != null) {
+                    if (adbCommandHelper == null) {
+                        adbCommandHelper = new AdbCommandHelper(context);
+                    }
+                    final AdbCommandHelper helper = adbCommandHelper;
+                    final String targetIp = serverAdr;
+                    // 同步发送关屏命令，确保在断开前执行
+                    helper.powerOffScreen(targetIp);
+                }
                 stop_Scrcpy_service();
                 finish();
             }

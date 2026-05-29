@@ -121,6 +121,42 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/layout_screen_off"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <Switch
+            android:id="@+id/switch_screen_off"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:textColor="@color/color_ffffff"
+            android:layout_weight="1"
+            android:text="@string/switch_screen_off"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_power_off_close"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <Switch
+            android:id="@+id/switch_power_off_close"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:textColor="@color/color_ffffff"
+            android:layout_weight="1"
+            android:text="@string/switch_power_off_close"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
