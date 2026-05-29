@@ -5,7 +5,7 @@ import android.util.Log
 import com.tananaev.adblib.AdbBase64
 import com.tananaev.adblib.AdbConnection
 import com.tananaev.adblib.AdbCrypto
-import org.apache.commons.codec.binary.Base64
+import android.util.Base64
 import java.io.IOException
 import java.net.Socket
 import java.nio.charset.StandardCharsets
@@ -121,7 +121,7 @@ class AdbCommandHelper(private val context: Context) {
     }
 
     private fun getBase64Impl(): AdbBase64 {
-        return AdbBase64 { arg0 -> Base64.encodeBase64String(arg0) }
+        return AdbBase64 { arg0 -> Base64.encodeToString(arg0, Base64.NO_WRAP) }
     }
 
     data class CommandResult(val isSuccess: Boolean, val output: String)
