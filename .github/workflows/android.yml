@@ -75,7 +75,7 @@ jobs:
           ABI="${{ matrix.abi }}"
           mkdir -p output
           # 从 split APK 输出目录中找到对应架构的 APK
-          SRC=$(find app/build/outputs/apk -type f -name "*-${ABI}.apk" | head -1)
+          SRC=$(find app/build/outputs/apk -type f -name "*_${ABI}.apk" | head -1)
           if [ -z "$SRC" ]; then
             echo "ERROR: 未找到 ${ABI} 的 APK"
             exit 1
