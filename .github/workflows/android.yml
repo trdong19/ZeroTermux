@@ -55,8 +55,8 @@ jobs:
       - name: 下载 Bootstrap 文件
         run: ./gradlew downloadBootstraps --stacktrace
 
-      - name: 编译 ${{ matrix.abi }} Release APK
-        run: ./gradlew assembleRelease -Pandroid.injected.build.abi=${{ matrix.abi }} --stacktrace
+      - name: 编译 Release APK
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: 确定发布名称
         id: set_name
@@ -70,20 +70,27 @@ jobs:
             echo "TAGGED=false" >> $GITHUB_ENV
           fi
 
-      - name: 重命名 APK 文件
+      - name: 提取 ${{ matrix.abi }} APK 并重命名
         run: |
-          find app/build/outputs/apk -type f -name "*.apk" | while read file; do
-            dir=$(dirname "$file")
-            filename=$(basename "$file")
-            new_filename="${filename/termux-app/${{ env.APP_NAME }}}"
-            mv "$file" "$dir/$new_filename"
-          done
+          ABI="${{ matrix.abi }}"
+          mkdir -p output
+          # 从 split APK 输出目录中找到对应架构的 APK
+          SRC=$(find app/build/outputs/apk -type f -name "*-${ABI}.apk" | head -1)
+          if [ -z "$SRC" ]; then
+            echo "ERROR: 未找到 ${ABI} 的 APK"
+            exit 1
+          fi
+          FILENAME=$(basename "$SRC")
+          NEW_NAME="${FILENAME/termux-app/${{ env.APP_NAME }}}"
+          cp "$SRC" "output/$NEW_NAME"
+          echo "已提取: $SRC -> output/$NEW_NAME"
+          ls -lh output/
 
       - name: 上传 ${{ matrix.abi }} APK 为 Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ZeroTermux-${{ matrix.abi }}
-          path: app/build/outputs/apk/**/*.apk
+          path: output/*.apk
           retention-days: 30
 
       - name: 发布 Nightly（主分支推送）
@@ -97,7 +104,7 @@ jobs:
           body: |
             自动构建于 `${{ github.sha }}`
             提交信息: ${{ github.event.head_commit.message }}
-          files: app/build/outputs/apk/**/*.apk
+          files: output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -110,6 +117,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: app/build/outputs/apk/**/*.apk
+          files: output/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
