@@ -93,7 +93,7 @@ jobs:
           tag_name: nightly
           name: Nightly Build
           prerelease: true
-          overwrite: true
+          overwrite_files: true
           body: |
             自动构建于 `${{ github.sha }}`
             提交信息: ${{ github.event.head_commit.message }}
